@@ -236,44 +236,27 @@
       "id": 6,
       "title": "💰 Kostnad per agent",
       "description": "Ackumulerad kostnad i USD per agent — sorterat störst till minst",
-      "type": "barchart",
+      "type": "bargauge",
       "gridPos": { "h": 8, "w": 18, "x": 6, "y": 7 },
       "options": {
-        "barRadius": 0.12,
-        "barWidth": 0.65,
-        "fillOpacity": 90,
-        "gradientMode": "scheme",
-        "groupWidth": 0.7,
-        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": false },
+        "displayMode": "gradient",
         "orientation": "horizontal",
-        "showValue": "always",
-        "stacking": { "group": "A", "mode": "none" },
-        "tooltip": { "mode": "single", "sort": "desc" },
-        "xTickLabelRotation": 0,
-        "xTickLabelSpacing": 100
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "showUnfilled": true,
+        "minVizHeight": 10,
+        "minVizWidth": 0,
+        "valueMode": "color"
       },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "USD",
-            "axisPlacement": "auto",
-            "fillOpacity": 90,
-            "gradientMode": "scheme",
-            "hideFrom": { "legend": false, "tooltip": false, "viz": false },
-            "lineWidth": 1,
-            "scaleDistribution": { "type": "linear" },
-            "thresholdsStyle": { "mode": "off" }
-          },
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "#D97757", "value": null },
-              { "color": "#DC6038", "value": 50 }
+              { "color": "#2eb87e", "value": null },
+              { "color": "#D97757", "value": 100 },
+              { "color": "red", "value": 500 }
             ]
           },
           "unit": "currencyUSD",
@@ -296,49 +279,26 @@
     {
       "id": 7,
       "title": "🤖 Tokens per agent",
-      "description": "Token-fördelning per agent uppdelat på Input, Output, Cache Read och Cache Write",
-      "type": "barchart",
+      "description": "Total token-användning per agent",
+      "type": "bargauge",
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 15 },
       "options": {
-        "barRadius": 0.05,
-        "barWidth": 0.7,
-        "fillOpacity": 80,
-        "gradientMode": "none",
-        "groupWidth": 0.7,
-        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
+        "displayMode": "gradient",
         "orientation": "horizontal",
-        "showValue": "auto",
-        "stacking": { "group": "A", "mode": "normal" },
-        "tooltip": { "mode": "multi", "sort": "desc" },
-        "xTickLabelRotation": 0,
-        "xTickLabelSpacing": 100
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "showUnfilled": true,
+        "minVizHeight": 10,
+        "minVizWidth": 0,
+        "valueMode": "color"
       },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "Tokens",
-            "axisPlacement": "auto",
-            "fillOpacity": 80,
-            "gradientMode": "none",
-            "hideFrom": { "legend": false, "tooltip": false, "viz": false },
-            "lineWidth": 1,
-            "scaleDistribution": { "type": "linear" },
-            "thresholdsStyle": { "mode": "off" }
-          },
           "mappings": [],
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "#D97757", "value": null }] },
           "unit": "short"
         },
-        "overrides": [
-          { "matcher": { "id": "byName", "options": "Input" }, "properties": [{ "id": "color", "value": { "fixedColor": "#D97757", "mode": "fixed" } }] },
-          { "matcher": { "id": "byName", "options": "Output" }, "properties": [{ "id": "color", "value": { "fixedColor": "#2eb87e", "mode": "fixed" } }] },
-          { "matcher": { "id": "byName", "options": "Cache Read" }, "properties": [{ "id": "color", "value": { "fixedColor": "#37a2cf", "mode": "fixed" } }] },
-          { "matcher": { "id": "byName", "options": "Cache Write" }, "properties": [{ "id": "color", "value": { "fixedColor": "#8855cc", "mode": "fixed" } }] }
-        ]
+        "overrides": []
       },
       "datasource": { "type": "prometheus", "uid": "prometheus-team-daniel" },
       "targets": [
@@ -375,40 +335,22 @@
 
     {
       "id": 8,
-      "title": "📁 Projekt-fördelning (log-skala)",
-      "description": "Tokens per projekt på logaritmisk skala — alla projekt syns oavsett storleksskillnad",
-      "type": "barchart",
+      "title": "📁 Projekt-fördelning",
+      "description": "Total token-användning per projekt",
+      "type": "bargauge",
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 15 },
       "options": {
-        "barRadius": 0.08,
-        "barWidth": 0.65,
-        "fillOpacity": 85,
-        "gradientMode": "scheme",
-        "groupWidth": 0.7,
-        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": false },
+        "displayMode": "gradient",
         "orientation": "horizontal",
-        "showValue": "always",
-        "stacking": { "group": "A", "mode": "none" },
-        "tooltip": { "mode": "single", "sort": "desc" },
-        "xTickLabelRotation": 0,
-        "xTickLabelSpacing": 100
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "showUnfilled": true,
+        "minVizHeight": 10,
+        "minVizWidth": 0,
+        "valueMode": "color"
       },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "Tokens (log)",
-            "axisPlacement": "auto",
-            "fillOpacity": 85,
-            "gradientMode": "scheme",
-            "hideFrom": { "legend": false, "tooltip": false, "viz": false },
-            "lineWidth": 1,
-            "scaleDistribution": { "type": "log", "log": 10 },
-            "thresholdsStyle": { "mode": "off" }
-          },
           "mappings": [],
           "thresholds": { "mode": "absolute", "steps": [{ "color": "#37a2cf", "value": null }] },
           "unit": "short"
@@ -431,38 +373,20 @@
       "id": 10,
       "title": "🧠 Tokens per modell",
       "description": "Total token-användning uppdelat per Claude-modell (Opus / Sonnet / Haiku)",
-      "type": "barchart",
+      "type": "bargauge",
       "gridPos": { "h": 6, "w": 12, "x": 0, "y": 23 },
       "options": {
-        "barRadius": 0.08,
-        "barWidth": 0.65,
-        "fillOpacity": 85,
-        "gradientMode": "scheme",
-        "groupWidth": 0.7,
-        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": false },
+        "displayMode": "gradient",
         "orientation": "horizontal",
-        "showValue": "always",
-        "stacking": { "group": "A", "mode": "none" },
-        "tooltip": { "mode": "single", "sort": "desc" },
-        "xTickLabelRotation": 0,
-        "xTickLabelSpacing": 100
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "showUnfilled": true,
+        "minVizHeight": 10,
+        "minVizWidth": 0,
+        "valueMode": "color"
       },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "Tokens",
-            "axisPlacement": "auto",
-            "fillOpacity": 85,
-            "gradientMode": "scheme",
-            "hideFrom": { "legend": false, "tooltip": false, "viz": false },
-            "lineWidth": 1,
-            "scaleDistribution": { "type": "linear" },
-            "thresholdsStyle": { "mode": "off" }
-          },
           "mappings": [],
           "thresholds": { "mode": "absolute", "steps": [{ "color": "#37a2cf", "value": null }] },
           "unit": "short"
@@ -485,38 +409,20 @@
       "id": 11,
       "title": "💸 Kostnad per modell",
       "description": "Uppskattad total kostnad i USD uppdelat per Claude-modell",
-      "type": "barchart",
+      "type": "bargauge",
       "gridPos": { "h": 6, "w": 12, "x": 12, "y": 23 },
       "options": {
-        "barRadius": 0.08,
-        "barWidth": 0.65,
-        "fillOpacity": 85,
-        "gradientMode": "scheme",
-        "groupWidth": 0.7,
-        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": false },
+        "displayMode": "gradient",
         "orientation": "horizontal",
-        "showValue": "always",
-        "stacking": { "group": "A", "mode": "none" },
-        "tooltip": { "mode": "single", "sort": "desc" },
-        "xTickLabelRotation": 0,
-        "xTickLabelSpacing": 100
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "showUnfilled": true,
+        "minVizHeight": 10,
+        "minVizWidth": 0,
+        "valueMode": "color"
       },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "USD",
-            "axisPlacement": "auto",
-            "fillOpacity": 85,
-            "gradientMode": "scheme",
-            "hideFrom": { "legend": false, "tooltip": false, "viz": false },
-            "lineWidth": 1,
-            "scaleDistribution": { "type": "linear" },
-            "thresholdsStyle": { "mode": "off" }
-          },
           "mappings": [],
           "thresholds": { "mode": "absolute", "steps": [{ "color": "#2eb87e", "value": null }] },
           "unit": "currencyUSD",
