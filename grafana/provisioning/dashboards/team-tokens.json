@@ -428,11 +428,120 @@
     },
 
     {
+      "id": 10,
+      "title": "🧠 Tokens per modell",
+      "description": "Total token-användning uppdelat per Claude-modell (Opus / Sonnet / Haiku)",
+      "type": "barchart",
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 23 },
+      "options": {
+        "barRadius": 0.08,
+        "barWidth": 0.65,
+        "fillOpacity": 85,
+        "gradientMode": "scheme",
+        "groupWidth": 0.7,
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": false },
+        "orientation": "horizontal",
+        "showValue": "always",
+        "stacking": { "group": "A", "mode": "none" },
+        "tooltip": { "mode": "single", "sort": "desc" },
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 100
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Tokens",
+            "axisPlacement": "auto",
+            "fillOpacity": 85,
+            "gradientMode": "scheme",
+            "hideFrom": { "legend": false, "tooltip": false, "viz": false },
+            "lineWidth": 1,
+            "scaleDistribution": { "type": "linear" },
+            "thresholdsStyle": { "mode": "off" }
+          },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "#37a2cf", "value": null }] },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "datasource": { "type": "prometheus", "uid": "prometheus-team-daniel" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus-team-daniel" },
+          "expr": "sort_desc(sum by(model) (claude_tokens_total))",
+          "legendFormat": "{{model}}",
+          "refId": "A",
+          "instant": true
+        }
+      ]
+    },
+
+    {
+      "id": 11,
+      "title": "💸 Kostnad per modell",
+      "description": "Uppskattad total kostnad i USD uppdelat per Claude-modell",
+      "type": "barchart",
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 23 },
+      "options": {
+        "barRadius": 0.08,
+        "barWidth": 0.65,
+        "fillOpacity": 85,
+        "gradientMode": "scheme",
+        "groupWidth": 0.7,
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": false },
+        "orientation": "horizontal",
+        "showValue": "always",
+        "stacking": { "group": "A", "mode": "none" },
+        "tooltip": { "mode": "single", "sort": "desc" },
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 100
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "USD",
+            "axisPlacement": "auto",
+            "fillOpacity": 85,
+            "gradientMode": "scheme",
+            "hideFrom": { "legend": false, "tooltip": false, "viz": false },
+            "lineWidth": 1,
+            "scaleDistribution": { "type": "linear" },
+            "thresholdsStyle": { "mode": "off" }
+          },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "#2eb87e", "value": null }] },
+          "unit": "currencyUSD",
+          "decimals": 2
+        },
+        "overrides": []
+      },
+      "datasource": { "type": "prometheus", "uid": "prometheus-team-daniel" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus-team-daniel" },
+          "expr": "sort_desc(sum by(model) (claude_cost_usd_total))",
+          "legendFormat": "{{model}}",
+          "refId": "A",
+          "instant": true
+        }
+      ]
+    },
+
+    {
       "id": 9,
       "title": "🤖 Agent-detaljer",
       "description": "Detaljerad tabell med sessioner, token-typer och kostnad per agent — sorterad på kostnad",
       "type": "table",
-      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 23 },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 29 },
       "options": {
         "cellHeight": "sm",
         "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": true },

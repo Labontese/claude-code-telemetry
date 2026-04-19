@@ -19,14 +19,27 @@ from datetime import datetime
 from pathlib import Path
 from typing import Iterator, Optional
 
-# ─── Prismodell (Claude Sonnet 4.6) ──────────────────────────────────────────
-# USD per token
+# ─── Prismodell per modell ────────────────────────────────────────────────────
+# (input, output, cache_write, cache_read) USD per token
 PRICING = {
-    "input":       3.0    / 1_000_000,   # $3/1M
-    "output":      15.0   / 1_000_000,   # $15/1M
-    "cache_write": 3.75   / 1_000_000,   # $3.75/1M
-    "cache_read":  0.30   / 1_000_000,   # $0.30/1M
+    "claude-opus-4-7":   (15/1_000_000, 75/1_000_000,  18.75/1_000_000, 1.50/1_000_000),
+    "claude-opus-4-6":   (15/1_000_000, 75/1_000_000,  18.75/1_000_000, 1.50/1_000_000),
+    "claude-sonnet-4-6": ( 3/1_000_000, 15/1_000_000,   3.75/1_000_000, 0.30/1_000_000),
+    "claude-sonnet-4-5": ( 3/1_000_000, 15/1_000_000,   3.75/1_000_000, 0.30/1_000_000),
+    "claude-haiku-4-5":  (0.8/1_000_000, 4/1_000_000,   1.00/1_000_000, 0.08/1_000_000),
+    # fallback
+    "default":           ( 3/1_000_000, 15/1_000_000,   3.75/1_000_000, 0.30/1_000_000),
 }
+
+
+def get_pricing(model: str) -> tuple:
+    """Returnera (input, output, cache_write, cache_read) priser för given modell."""
+    for prefix, prices in PRICING.items():
+        if prefix == "default":
+            continue
+        if model.startswith(prefix) or prefix in model:
+            return prices
+    return PRICING["default"]
 
 
 # ─── Data-modell ──────────────────────────────────────────────────────────────
@@ -44,7 +57,8 @@ class SessionStats:
     cache_creation_tokens: int
     cache_read_tokens: int
     total_tokens: int          # input + output
-    estimated_cost_usd: float  # baserat på Sonnet 4.6-priser
+    estimated_cost_usd: float  # baserat på per-modell-priser
+    model: str = "unknown"     # t.ex. "claude-sonnet-4-6", "claude-opus-4-6"
 
 
 # ─── ClaudeSessionParser ──────────────────────────────────────────────────────
@@ -116,6 +130,8 @@ class ClaudeSessionParser:
                     "total_tokens": 0,
                     "estimated_cost_usd": 0.0,
                     "last_seen": s.timestamp,
+                    "_model_counts": {},  # intern räknare för mode-beräkning
+                    "model": "unknown",
                 }
             agg = aggregated[key]
             agg["session_count"] += 1
@@ -125,9 +141,18 @@ class ClaudeSessionParser:
             agg["cache_read_tokens"] += s.cache_read_tokens
             agg["total_tokens"] += s.total_tokens
             agg["estimated_cost_usd"] += s.estimated_cost_usd
+            # Räkna modell-förekomster för att bestämma dominant modell
+            mc = agg["_model_counts"]
+            mc[s.model] = mc.get(s.model, 0) + 1
             if s.timestamp > agg["last_seen"]:
                 agg["last_seen"] = s.timestamp
                 agg["project"] = s.project  # senaste projekt
+
+        # Sätt dominant modell och ta bort intern räknare
+        for agg in aggregated.values():
+            mc = agg.pop("_model_counts", {})
+            if mc:
+                agg["model"] = max(mc, key=lambda m: mc[m])
 
         return aggregated
 
@@ -174,6 +199,7 @@ class ClaudeSessionParser:
         total_cache_read = 0
         last_timestamp = datetime.now()
         has_data = False
+        model_counts: dict[str, int] = {}
 
         try:
             with jsonl_file.open("r", encoding="utf-8", errors="replace") as f:
@@ -196,6 +222,14 @@ class ClaudeSessionParser:
                     if usage is None:
                         continue
 
+                    # Extrahera modell (nested i message eller på root-nivå)
+                    row_model = (
+                        record.get("model")
+                        or record.get("message", {}).get("model")
+                        or "unknown"
+                    )
+                    model_counts[row_model] = model_counts.get(row_model, 0) + 1
+
                     total_input += usage.get("input_tokens", 0) or 0
                     total_output += usage.get("output_tokens", 0) or 0
                     total_cache_creation += (
@@ -212,12 +246,16 @@ class ClaudeSessionParser:
         if not has_data:
             return None
 
+        # Vanligaste modellen i sessionen (mode)
+        dominant_model = max(model_counts, key=lambda m: model_counts[m]) if model_counts else "unknown"
+
         total_tokens = total_input + total_output
+        inp_price, out_price, cw_price, cr_price = get_pricing(dominant_model)
         estimated_cost = (
-            total_input * PRICING["input"]
-            + total_output * PRICING["output"]
-            + total_cache_creation * PRICING["cache_write"]
-            + total_cache_read * PRICING["cache_read"]
+            total_input * inp_price
+            + total_output * out_price
+            + total_cache_creation * cw_price
+            + total_cache_read * cr_price
         )
 
         return SessionStats(
@@ -232,6 +270,7 @@ class ClaudeSessionParser:
             cache_read_tokens=total_cache_read,
             total_tokens=total_tokens,
             estimated_cost_usd=round(estimated_cost, 6),
+            model=dominant_model,
         )
 
     # ── Hjälpmetoder ──────────────────────────────────────────────────────────

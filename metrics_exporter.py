@@ -52,20 +52,20 @@ log = logging.getLogger("metrics_exporter")
 
 _token_gauge = Gauge(
     "claude_tokens_total",
-    "Totalt antal tokens per agent, projekt och tokentyp",
-    labelnames=["agent", "project", "type"],
+    "Totalt antal tokens per agent, projekt, tokentyp och modell",
+    labelnames=["agent", "project", "type", "model"],
 )
 
 _cost_gauge = Gauge(
     "claude_cost_usd_total",
-    "Uppskattad total kostnad i USD per agent och projekt",
-    labelnames=["agent", "project"],
+    "Uppskattad total kostnad i USD per agent, projekt och modell",
+    labelnames=["agent", "project", "model"],
 )
 
 _sessions_gauge = Gauge(
     "claude_sessions_total",
-    "Antal sessioner per agent och projekt",
-    labelnames=["agent", "project"],
+    "Antal sessioner per agent, projekt och modell",
+    labelnames=["agent", "project", "model"],
 )
 
 
@@ -133,28 +133,29 @@ class MetricsExporter:
             for agent_name, data in aggregated.items():
                 project = data.get("project", "unknown")
                 agent = agent_name
+                model = data.get("model", "unknown")
 
                 # Token-gauges per typ
-                _token_gauge.labels(agent=agent, project=project, type="input").set(
+                _token_gauge.labels(agent=agent, project=project, type="input", model=model).set(
                     data["input_tokens"]
                 )
-                _token_gauge.labels(agent=agent, project=project, type="output").set(
+                _token_gauge.labels(agent=agent, project=project, type="output", model=model).set(
                     data["output_tokens"]
                 )
-                _token_gauge.labels(agent=agent, project=project, type="cache_write").set(
+                _token_gauge.labels(agent=agent, project=project, type="cache_write", model=model).set(
                     data["cache_creation_tokens"]
                 )
-                _token_gauge.labels(agent=agent, project=project, type="cache_read").set(
+                _token_gauge.labels(agent=agent, project=project, type="cache_read", model=model).set(
                     data["cache_read_tokens"]
                 )
 
                 # Kostnad
-                _cost_gauge.labels(agent=agent, project=project).set(
+                _cost_gauge.labels(agent=agent, project=project, model=model).set(
                     data["estimated_cost_usd"]
                 )
 
                 # Sessionräknare
-                _sessions_gauge.labels(agent=agent, project=project).set(
+                _sessions_gauge.labels(agent=agent, project=project, model=model).set(
                     data["session_count"]
                 )
 

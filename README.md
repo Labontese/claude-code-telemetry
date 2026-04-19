@@ -1,10 +1,18 @@
-# claude-code-telemetry
+# Claude Code Telemetry
 
-A local token-usage dashboard for Claude Code users — no API key required.
+> Local token-usage dashboard for Claude Code — no API key required.
 
-![Python 3.8+](https://img.shields.io/badge/python-3.8%2B-blue?logo=python&logoColor=white)
-![Docker](https://img.shields.io/badge/docker-compose-2496ED?logo=docker&logoColor=white)
-![License](https://img.shields.io/badge/license-MIT-green)
+[![Python](https://img.shields.io/badge/python-3.8+-blue.svg)](https://python.org)
+[![Docker](https://img.shields.io/badge/docker-compose-2496ED.svg)](https://docker.com)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![Claude Code](https://img.shields.io/badge/Claude_Code-compatible-D97757.svg)](https://claude.ai/code)
+
+```
+╔═══════════════════════════════════════════╗
+║  Track your Claude Code token usage       ║
+║  locally · privately · for free           ║
+╚═══════════════════════════════════════════╝
+```
 
 ![Dashboard](docs/screenshot.png)
 
@@ -29,6 +37,13 @@ A local token-usage dashboard for Claude Code users — no API key required.
 
 ---
 
+## How It Looks
+
+![Dashboard screenshot](docs/screenshot.png)
+*Token usage across all agents, with cost estimates and cache hit rate.*
+
+---
+
 ## Requirements
 
 - Python 3.8+
@@ -38,6 +53,8 @@ A local token-usage dashboard for Claude Code users — no API key required.
 ---
 
 ## Quick Start
+
+Get up and running in under two minutes — no account setup, no cloud services. Just clone, start the stack, and open Grafana.
 
 **1. Clone the repository**
 
@@ -126,9 +143,9 @@ Grafana (port 3000)        — visualises token usage per agent
 
 | Metric | Labels | Description |
 |---|---|---|
-| `claude_tokens_total` | `agent`, `project`, `type` | Accumulated token count per agent, project, and token type (`input` / `output` / `cache_write` / `cache_read`) |
-| `claude_cost_usd_total` | `agent`, `project` | Estimated total cost in USD |
-| `claude_sessions_total` | `agent`, `project` | Number of sessions parsed |
+| `claude_tokens_total` | `agent`, `project`, `type`, `model` | Accumulated token count per agent, project, token type (`input` / `output` / `cache_write` / `cache_read`) and model |
+| `claude_cost_usd_total` | `agent`, `project`, `model` | Estimated total cost in USD per agent, project and model |
+| `claude_sessions_total` | `agent`, `project`, `model` | Number of sessions parsed per agent, project and model |
 
 ---
 
@@ -144,6 +161,8 @@ Grafana (port 3000)        — visualises token usage per agent
 | Cost per agent | Bar chart | Estimated USD cost broken down by agent |
 | Tokens per agent | Bar chart | Token volume broken down by agent |
 | Project distribution | Bar chart | Token volume broken down by project (log scale) |
+| Tokens per model | Bar chart | Total token usage broken down by Claude model (Opus / Sonnet / Haiku) |
+| Cost per model | Bar chart | Estimated USD cost broken down by Claude model |
 | Agent details | Table | Full breakdown: input, output, cache, cost, sessions per agent |
 
 ---
@@ -189,14 +208,16 @@ python export_dashboard.py --url http://other-server:3000 --user admin --passwor
 
 ## Pricing Model
 
-Cost estimates are based on Claude Sonnet 4.6 list prices:
+Cost estimates use per-model list prices. The model is detected from each session's JSONL data (`message.model` field). If no model is found, Sonnet 4.6 prices are used as fallback.
 
-| Token type | Price |
-|---|---|
-| Input | $3.00 / 1M tokens |
-| Output | $15.00 / 1M tokens |
-| Cache write | $3.75 / 1M tokens |
-| Cache read | $0.30 / 1M tokens |
+| Model | Input | Output | Cache write | Cache read |
+|---|---|---|---|---|
+| claude-opus-4-7 | $15.00 / 1M | $75.00 / 1M | $18.75 / 1M | $1.50 / 1M |
+| claude-opus-4-6 | $15.00 / 1M | $75.00 / 1M | $18.75 / 1M | $1.50 / 1M |
+| claude-sonnet-4-6 | $3.00 / 1M | $15.00 / 1M | $3.75 / 1M | $0.30 / 1M |
+| claude-sonnet-4-5 | $3.00 / 1M | $15.00 / 1M | $3.75 / 1M | $0.30 / 1M |
+| claude-haiku-4-5 | $0.80 / 1M | $4.00 / 1M | $1.00 / 1M | $0.08 / 1M |
+| default (fallback) | $3.00 / 1M | $15.00 / 1M | $3.75 / 1M | $0.30 / 1M |
 
 Prices change over time. For current rates, see the [Anthropic pricing page](https://www.anthropic.com/pricing). To update, edit the `PRICING` dict at the top of `claude_session_parser.py`.
 
