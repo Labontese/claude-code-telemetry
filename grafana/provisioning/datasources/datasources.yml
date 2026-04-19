@@ -1,0 +1,40 @@
+# Grafana Datasources — provisioneras automatiskt vid uppstart
+# Ingen manuell konfiguration behövs
+
+apiVersion: 1
+
+datasources:
+
+  # Prometheus — för metrics och aggregerad token-statistik
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    uid: prometheus-team-daniel
+    jsonData:
+      httpMethod: POST
+      exemplarTraceIdDestinations:
+        - name: traceID
+          datasourceUid: tempo-team-daniel
+    editable: false
+
+  # Tempo — för distributed traces per agent-anrop
+  - name: Tempo
+    type: tempo
+    access: proxy
+    url: http://tempo:3200
+    uid: tempo-team-daniel
+    jsonData:
+      httpMethod: GET
+      serviceMap:
+        datasourceUid: prometheus-team-daniel
+      nodeGraph:
+        enabled: true
+      traceQuery:
+        timeShiftEnabled: true
+        spanStartTimeShift: "1h"
+        spanEndTimeShift: "-1h"
+      lokiSearch:
+        datasourceUid: ""
+    editable: false

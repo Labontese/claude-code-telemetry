@@ -1,0 +1,89 @@
+# OpenTelemetry Collector — Team Daniel Telemetri
+# Tar emot traces och metrics från agent_tracer.py
+# Vidarebefordrar traces till Tempo, metrics till Prometheus
+
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+
+receivers:
+  # OTLP — tar emot data från Python-agenter
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+        cors:
+          allowed_origins:
+            - "http://localhost:*"
+
+  # Collector egna interna metrics
+  prometheus:
+    config:
+      scrape_configs:
+        - job_name: "otel-collector"
+          scrape_interval: 30s
+          static_configs:
+            - targets: ["localhost:8888"]
+
+processors:
+  # Batch-processor — buffrar data för effektivare export
+  batch:
+    timeout: 5s
+    send_batch_size: 512
+
+  # Minne-limiter — skyddar mot OOM
+  memory_limiter:
+    check_interval: 1s
+    limit_percentage: 75
+    spike_limit_percentage: 25
+
+  # Resource-processor — lägg till gemensamma attribut på alla telemetri
+  resource:
+    attributes:
+      - key: deployment.environment
+        value: "team-daniel"
+        action: upsert
+      - key: service.namespace
+        value: "ai-agents"
+        action: upsert
+
+exporters:
+  # Skicka traces till Tempo
+  otlp/tempo:
+    endpoint: tempo:4317
+    tls:
+      insecure: true
+
+  # Exponera metrics för Prometheus att skrapa
+  prometheus:
+    endpoint: "0.0.0.0:8889"
+    namespace: "team_daniel"
+    send_timestamps: true
+    metric_expiration: 3m
+    enable_open_metrics: true
+    # resource_to_telemetry_conversion avstängd — orsakar duplicate label names
+    # när collector-interna metrics (redan label-satta) passerar resource-processorn
+
+  # Debug-logging (sätt level: none i produktion)
+  debug:
+    verbosity: basic
+    sampling_initial: 5
+    sampling_thereafter: 200
+
+service:
+  extensions: [health_check]
+
+  pipelines:
+    # Traces-pipeline: agent → collector → Tempo
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [otlp/tempo, debug]
+
+    # Metrics-pipeline: agent → collector → Prometheus
+    metrics:
+      receivers: [otlp, prometheus]
+      processors: [memory_limiter, resource, batch]
+      exporters: [prometheus, debug]

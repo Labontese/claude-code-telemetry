@@ -1,0 +1,54 @@
+# Prometheus konfiguration — Team Daniel Telemetri
+# Skrapar metrics från OTel Collector
+
+global:
+  scrape_interval: 15s       # Hur ofta vi hämtar metrics
+  evaluation_interval: 15s   # Hur ofta vi utvärderar regler
+  scrape_timeout: 10s
+
+  # Gemensamma labels på all insamlad data
+  external_labels:
+    environment: "team-daniel"
+    project: "ai-telemetry"
+
+rule_files:
+  # Lägg till alerting-regler här om du vill
+  # - "alert_rules.yml"
+
+scrape_configs:
+
+  # OTel Collector — agent metrics (tokens per agent etc.)
+  - job_name: "otel-collector-agents"
+    scrape_interval: 15s
+    static_configs:
+      - targets: ["otel-collector:8889"]
+        labels:
+          component: "otel-collector"
+          data_type: "agent-metrics"
+
+  # OTel Collector interna metrics
+  - job_name: "otel-collector-internal"
+    scrape_interval: 30s
+    static_configs:
+      - targets: ["otel-collector:8888"]
+        labels:
+          component: "otel-collector"
+          data_type: "collector-internal"
+
+  # Claude Code session metrics — exporteras av run_exporter.py (python)
+  # Kör: python run_exporter.py  (utanför Docker, på host-maskinen)
+  - job_name: "claude-session-metrics"
+    scrape_interval: 60s
+    static_configs:
+      - targets: ["host.docker.internal:8000"]
+        labels:
+          component: "claude-session-exporter"
+          data_type: "session-tokens"
+
+  # Prometheus självövervakning
+  - job_name: "prometheus"
+    scrape_interval: 30s
+    static_configs:
+      - targets: ["localhost:9090"]
+        labels:
+          component: "prometheus"

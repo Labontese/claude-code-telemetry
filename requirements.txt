@@ -1,0 +1,4 @@
+# claude-code-telemetry dependencies
+# Install: pip install -r requirements.txt
+
+prometheus_client>=0.20.0

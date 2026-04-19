@@ -1,0 +1,162 @@
+# Team Daniel — Telemetri-stack
+# Trackar token-användning per AI-agent via OpenTelemetry
+# Kör: docker compose up -d
+
+networks:
+  telemetry:
+    driver: bridge
+
+volumes:
+  grafana-data:
+  prometheus-data:
+  tempo-data:
+
+services:
+
+  # ─── OpenTelemetry Collector ──────────────────────────────────────────────
+  # Tar emot traces och metrics från agent_tracer.py,
+  # vidarebefordrar till Tempo (traces) och Prometheus (metrics)
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.99.0
+    container_name: team-otel-collector
+    restart: unless-stopped
+    volumes:
+      - ./otel-collector-config.yml:/etc/otelcol-contrib/config.yaml:ro
+    ports:
+      - "4317:4317"   # OTLP gRPC — agenter skickar hit
+      - "4318:4318"   # OTLP HTTP — alternativt protokoll
+      - "8888:8888"   # Collector egna metrics
+      - "8889:8889"   # Prometheus scrape endpoint (collector metrics)
+      - "13133:13133" # Health-check endpoint
+    networks:
+      - telemetry
+    depends_on:
+      tempo:
+        condition: service_healthy
+    healthcheck:
+      # OTel Collector-imagen är distroless — inget shell/wget finns.
+      # Processen övervakas av Docker direkt; extern health via port 13133.
+      test: ["NONE"]
+
+  # ─── Grafana Tempo ────────────────────────────────────────────────────────
+  # Trace-backend — lagrar alla OpenTelemetry-traces
+  tempo:
+    image: grafana/tempo:2.4.1
+    container_name: team-tempo
+    restart: unless-stopped
+    command: ["-config.file=/etc/tempo.yml"]
+    volumes:
+      - tempo-data:/var/tempo
+    configs:
+      - source: tempo-config
+        target: /etc/tempo.yml
+    ports:
+      - "3200:3200"   # Tempo HTTP API (används av Grafana datasource)
+      - "9095:9095"   # Tempo gRPC
+    networks:
+      - telemetry
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3200/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # ─── Prometheus ───────────────────────────────────────────────────────────
+  # Skrapar metrics från OTel Collector + claude-session-exporter (host:8000)
+  # OBS: host.docker.internal pekar på Windows-hosten där run_exporter.py körs
+  prometheus:
+    image: prom/prometheus:v2.51.2
+    container_name: team-prometheus
+    restart: unless-stopped
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - telemetry
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=30d"
+      - "--web.enable-lifecycle"
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─── Grafana ──────────────────────────────────────────────────────────────
+  # Dashboard — öppna http://localhost:3000 (admin/admin)
+  # Dashboards och datasources provisioned automatiskt
+  grafana:
+    image: grafana/grafana:10.4.2
+    container_name: team-grafana
+    restart: unless-stopped
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_FEATURE_TOGGLES_ENABLE=traceqlEditor
+      # Tillåt embedding om du vill bädda in dashboards
+      - GF_SECURITY_ALLOW_EMBEDDING=true
+      - GF_PANELS_DISABLE_SANITIZE_HTML=true
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+    ports:
+      - "3002:3000"
+    networks:
+      - telemetry
+    depends_on:
+      prometheus:
+        condition: service_healthy
+      tempo:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+configs:
+  tempo-config:
+    content: |
+      server:
+        http_listen_port: 3200
+        grpc_listen_port: 9095
+
+      distributor:
+        receivers:
+          otlp:
+            protocols:
+              grpc:
+                endpoint: 0.0.0.0:4317
+              http:
+                endpoint: 0.0.0.0:4318
+
+      ingester:
+        trace_idle_period: 10s
+        max_block_bytes: 1_000_000
+        max_block_duration: 5m
+
+      compactor:
+        compaction:
+          compaction_window: 1h
+          max_compaction_objects: 1000000
+          block_retention: 72h
+
+      storage:
+        trace:
+          backend: local
+          local:
+            path: /var/tempo/traces
+          wal:
+            path: /var/tempo/wal
+
+      query_frontend:
+        search:
+          duration_slo: 5s
+          throughput_bytes_slo: 1.073741824e+09
+        trace_by_id:
+          duration_slo: 5s

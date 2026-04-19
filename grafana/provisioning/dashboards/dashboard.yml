@@ -1,0 +1,17 @@
+# Grafana Dashboard Provider — provisionerar JSON-dashboards automatiskt
+# Alla .json-filer i mappen laddas in vid uppstart
+
+apiVersion: 1
+
+providers:
+  - name: "Team Daniel Dashboards"
+    orgId: 1
+    folder: "Team Daniel"
+    folderUid: "team-daniel-folder"
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/provisioning/dashboards
+      foldersFromFilesStructure: false
